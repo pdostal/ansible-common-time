@@ -1,0 +1,42 @@
+- name: Time
+  hosts: all
+  sudo: true
+  handlers:
+  - name: restart openntpd
+    service: name=openntpd state=restarted
+  tasks:
+  - set_fact:
+      ntpd_conf: /etc/
+    when: ansible_distribution == 'FreeBSD'
+  - set_fact:
+      ntpd_conf: /etc/openntpd/
+    when: ansible_distribution == 'Debian'
+
+  - name: Copy UTC zoneinfo (FreeBSD)
+    copy: >
+      src=/usr/share/zoneinfo/UTC
+      dest=/etc/localtime
+
+  - name: Install openntpd
+    apt: name=openntpd state=latest
+    when: ansible_distribution == 'Debian'
+    notify: restart openntpd
+  - name: Install openntpd (FreeBSD)
+    pkgng: name=openntpd state=present
+    when: ansible_distribution == 'FreeBSD'
+    notify: restart openntpd
+
+  - name: Enable openntpd (FreeBSD)
+    when: ansible_distribution == 'FreeBSD'
+    notify: restart openntpd
+    lineinfile: dest=/etc/rc.conf regexp=^openntpd_enable= line=openntpd_enable=YES
+  - name: Set openntpd flags (FreeBSD)
+    when: ansible_distribution == 'FreeBSD'
+    notify: restart openntpd
+    lineinfile: dest=/etc/rc.conf regexp=^openntpd_flags= line=openntpd_flags=-sv
+
+  - name: Paste master config
+    template: >
+      src=templates/ntpd.conf
+      dest={{ ntpd_conf }}/ntpd.conf
+    notify: restart openntpd
