@@ -4,6 +4,8 @@
   handlers:
   - name: restart openntpd
     service: name=openntpd state=restarted
+  - name: update tzdata
+    command: dpkg-reconfigure --frontend noninteractive tzdata
   tasks:
   - set_fact:
       openntpd_conf: /etc/ntpd.conf
@@ -12,8 +14,13 @@
       openntpd_conf: /etc/openntpd//ntpd.conf
     when: ansible_distribution == 'Debian'
 
-  - name: Copy UTC zoneinfo (FreeBSD)
+  - name: Copy UTC timezone (FreeBSD)
     copy: src=/usr/share/zoneinfo/UTC dest=/etc/localtime
+    when: ansible_distribution == 'FreeBSD'
+  - name: Copy UTC timezone (Debian)
+    template: dest=/etc/timezone src=templates/timezone
+    when: ansible_distribution == 'Debian'
+    notify: update tzdata
 
   - name: Install openntpd
     apt: name=openntpd state=latest
