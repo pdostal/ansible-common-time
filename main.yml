@@ -35,6 +35,10 @@
     when: ansible_distribution == 'FreeBSD'
     notify: restart openntpd
     lineinfile: dest=/etc/rc.conf regexp=^openntpd_enable= line=openntpd_enable=YES
+  - name: Set openntpd flags (Debian)
+    when: ansible_distribution == 'Debian'
+    notify: restart openntpd
+    lineinfile: dest=/etc/default/openntpd regexp=^DAEMON_OPTS= line='DAEMON_OPTS="-svf /etc/openntpd/ntpd.conf"'
   - name: Set openntpd flags (FreeBSD)
     when: ansible_distribution == 'FreeBSD'
     notify: restart openntpd
